@@ -1,73 +1,53 @@
-# Welcome to your Lovable project
+# Peer Comparison
 
-## Project info
+Compare any company's valuation multiples against reliable peers from S&P 500 (Sector/Industry) for accuracy, with real metrics pulled from multiple APIs.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+Live: https://peercomparison.vercel.app/ 
 
-## How can I edit this code?
+## Why This Exists
 
-There are several ways of editing your application.
+Most peer tools use inconsistent sector data or huge universes that dilute comparisons.  
+This one lets you control the peer universe via CSV → match by sector/industry → fetch clean multiples → see premiums/discounts + simple rules-based explanations for differences.  
+Built for quick, repeatable checks without the noise.
 
-**Use Lovable**
+## Features
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+- Multiple peer matching modes: Sector only, Industry only, Industry (fallback to sector)
+- Min/max market cap filters (sliders)
+- Key valuation multiples: EV/EBITDA, EV/Sales, P/E, P/FCF, P/Sales, Gross Margin, Operating Margin, ROE, Revenue Growth, Debt/Equity
+- Peer stats: P25 / Median / P75 + sample size (N)
+- Company vs peers: Premium/Discount % vs median
+- Rules-based "Why might valuation differ?" section (neutral, factual)
+- Peer distribution charts (Recharts histograms)
+- Custom Group mode: Paste tickers or upload CSV for ad-hoc baskets
+- Multi-API fetching (yfinance primary + Alpha Vantage/Finnhub/FMP fallbacks)
+- Optional AI narrative summaries (opt-in, aggregated data only)
+- Export tables/stats as CSV/JSON
+- Dark, spacious, professional UI (shadcn/ui + Tailwind)
 
-Changes made via Lovable will be committed automatically to this repo.
+## How It Works
 
-**Use your preferred IDE**
+1. Enter a ticker (e.g., NOW) + select matching mode + mcap range
+2. App filters peers from CSV → fetches metrics via APIs → computes medians, percentiles, premiums/discounts
+3. View tables, charts, and "why differ" explanations
+4. Switch to Custom Group tab for manual ticker lists
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+All processing is client-side where possible. Metrics are fetched live (cached in localStorage for 1 hour).
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## Tech Stack
 
-Follow these steps:
+- Vite + React + TypeScript
+- Tailwind CSS + shadcn/ui (dark theme)
+- PapaParse (CSV parsing)
+- Recharts (distribution charts)
+- Zustand (state management)
+- yfinance + Alpha Vantage / Finnhub / FMP API fallbacks
+- Deployed on Vercel
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## Quick Start (Local)
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```bash
+git clone https://github.com/Archiehehe/peer-comparison.git
+cd peer-comparison
+npm install
 npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
