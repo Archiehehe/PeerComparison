@@ -1,11 +1,16 @@
 import { useState, useRef, useCallback } from 'react';
-import { CompanyMetrics, CacheEntry } from '@/types/financial';
+import { CompanyMetrics } from '@/types/financial';
 import { fetchMetricsForTicker } from '@/lib/api';
+
+interface CacheEntry {
+  data: CompanyMetrics;
+  timestamp: number;
+}
 
 const METRICS_CACHE_KEY = 'peer-comparison-metrics-cache';
 const METRICS_TTL = 60 * 60 * 1000;
 
-function loadMetricsCache(): Record<string, CacheEntry<CompanyMetrics>> {
+function loadMetricsCache(): Record<string, CacheEntry> {
   try {
     const raw = localStorage.getItem(METRICS_CACHE_KEY);
     if (!raw) return {};
@@ -15,7 +20,7 @@ function loadMetricsCache(): Record<string, CacheEntry<CompanyMetrics>> {
   }
 }
 
-function saveMetricsCache(cache: Record<string, CacheEntry<CompanyMetrics>>) {
+function saveMetricsCache(cache: Record<string, CacheEntry>) {
   try {
     localStorage.setItem(METRICS_CACHE_KEY, JSON.stringify(cache));
   } catch { }
@@ -24,7 +29,7 @@ function saveMetricsCache(cache: Record<string, CacheEntry<CompanyMetrics>>) {
 export function useCompanyMetrics() {
   const [loadingTickers, setLoadingTickers] = useState<Set<string>>(new Set());
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const cacheRef = useRef<Record<string, CacheEntry<CompanyMetrics>>>(loadMetricsCache());
+  const cacheRef = useRef<Record<string, CacheEntry>>(loadMetricsCache());
 
   const getCachedMetrics = useCallback((ticker: string): CompanyMetrics | null => {
     const entry = cacheRef.current[ticker.toUpperCase()];

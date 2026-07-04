@@ -1,12 +1,12 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Download, BarChart3, Database, RefreshCw, Loader2 } from 'lucide-react';
-import { SP500Company, MatchingMode, CompanyMetrics } from '@/types/financial';
+import { Download, BarChart3, Database, Loader2 } from 'lucide-react';
+import { SP500Company, MatchingMode, CompanyMetrics, UniverseItem } from '@/types/financial';
+import { sp500Data } from '@/data/sp500';
 import { computeComparison, logToMcap } from '@/lib/calculations';
 import { exportPeerTableCSV, exportStatsCSV } from '@/lib/export';
 import { useRecentTickers } from '@/hooks/useRecentTickers';
-import { useStockUniverse } from '@/hooks/useStockUniverse';
 import { useCompanyMetrics } from '@/hooks/useCompanyMetrics';
 import { FilterPanel } from '@/components/peer/FilterPanel';
 import { PeerStatsTable } from '@/components/peer/PeerStatsTable';
@@ -15,16 +15,24 @@ import { PeerDistributionChart } from '@/components/peer/PeerDistributionChart';
 import { PeerDetailsTable } from '@/components/peer/PeerDetailsTable';
 import { ValuationInsights } from '@/components/peer/ValuationInsights';
 
+const universe: UniverseItem[] = sp500Data.map(c => ({
+  ticker: c.ticker, name: c.name, sector: c.sector,
+  industry: c.industry, marketCap: c.marketCap,
+}));
+
+function hardcodedMetricsMap(): Record<string, CompanyMetrics> {
+  const map: Record<string, CompanyMetrics> = {};
+  for (const c of sp500Data) map[c.ticker] = c.metrics;
+  return map;
+}
+
 function buildSP500Company(
-  item: { ticker: string; name: string; sector: string; industry: string; marketCap: number | null },
+  item: UniverseItem,
   metrics: CompanyMetrics | null,
 ): SP500Company {
   return {
-    ticker: item.ticker,
-    name: item.name,
-    sector: item.sector,
-    industry: item.industry,
-    marketCap: item.marketCap ?? 0,
+    ticker: item.ticker, name: item.name, sector: item.sector,
+    industry: item.industry, marketCap: item.marketCap ?? 0,
     metrics: metrics ?? {
       peRatio: null, evEbitda: null, evSales: null, pFcf: null, pSales: null,
       grossMargin: null, operatingMargin: null, roe: null, revenueGrowth: null, debtEquity: null,
@@ -33,15 +41,15 @@ function buildSP500Company(
 }
 
 export default function Index() {
-  const { universe, loading: universeLoading, error: universeError, isLive, refresh: refreshUniverse } = useStockUniverse();
   const { fetchMetrics, loadingTickers, errors: metricErrors } = useCompanyMetrics();
   const hasMetricError = Object.keys(metricErrors).length > 0;
 
   const [selectedTicker, setSelectedTicker] = useState('');
   const [matchingMode, setMatchingMode] = useState<MatchingMode>('industry-fallback');
   const [mcapRange, setMcapRange] = useState<[number, number]>([1, 4]);
-  const [metricsMap, setMetricsMap] = useState<Record<string, CompanyMetrics>>({});
+  const [metricsMap, setMetricsMap] = useState<Record<string, CompanyMetrics>>(hardcodedMetricsMap);
   const [fetching, setFetching] = useState(false);
+  const hasLiveMetric = useRef(false);
   const { recentTickers, addTicker, clearRecent } = useRecentTickers();
 
   const handleSelectTicker = useCallback(async (ticker: string) => {
@@ -51,7 +59,7 @@ export default function Index() {
 
   const companyItem = useMemo(
     () => universe.find(c => c.ticker === selectedTicker),
-    [universe, selectedTicker],
+    [selectedTicker],
   );
 
   const peerTickers = useMemo(() => {
@@ -82,6 +90,7 @@ export default function Index() {
     fetchMetrics(allTickers).then(result => {
       if (!cancelled) {
         setMetricsMap(prev => ({ ...prev, ...result }));
+        if (Object.keys(result).length > 0) hasLiveMetric.current = true;
         setFetching(false);
       }
     }).catch(() => {
@@ -90,9 +99,10 @@ export default function Index() {
     return () => { cancelled = true; };
   }, [selectedTicker, peerTickers, fetchMetrics]);
 
-  const allCompanies: SP500Company[] = useMemo(() => {
-    return universe.map(item => buildSP500Company(item, metricsMap[item.ticker] ?? null));
-  }, [universe, metricsMap]);
+  const allCompanies: SP500Company[] = useMemo(
+    () => universe.map(item => buildSP500Company(item, metricsMap[item.ticker] ?? null)),
+    [metricsMap],
+  );
 
   const company = useMemo(() => {
     if (!companyItem) return null;
@@ -107,10 +117,10 @@ export default function Index() {
   }, [company, allCompanies, matchingMode, mcapRange, peerTickers.length]);
 
   const isFetching = fetching || loadingTickers.size > 0;
+  const isLive = hasLiveMetric.current;
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Hero */}
       <header className="border-b border-border">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-6 sm:py-8">
           <div className="flex items-start gap-3">
@@ -130,26 +140,15 @@ export default function Index() {
               </div>
               <p className="mt-1.5 text-xs sm:text-sm text-muted-foreground max-w-2xl leading-relaxed">
                 {isLive
-                  ? 'Live peer matching from S&P 500 (Sector/Industry). Metrics fetched from Financial Modeling Prep & Alpha Vantage.'
-                  : 'Reliable peer matching from S&P 500 (Sector/Industry). Multiple APIs for metrics.'}
+                  ? 'Live metrics from Yahoo Finance, Financial Modeling Prep & Alpha Vantage. Cached for 1 hour.'
+                  : 'Hardcoded S&P 500 snapshot. Select a ticker to fetch live metrics.'}
               </p>
             </div>
-            <Button variant="ghost" size="sm" onClick={refreshUniverse} disabled={universeLoading} className="h-8 text-xs">
-              <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${universeLoading ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
           </div>
         </div>
       </header>
 
       <main className="max-w-[1600px] mx-auto px-4 sm:px-6 py-6">
-        {universeError && (
-          <div className="mb-4 p-3 rounded-lg border border-amber-500/20 bg-amber-500/5">
-            <p className="text-xs text-amber-400 font-mono">
-              Universe fetch failed: {universeError}. Using hardcoded snapshot data.
-            </p>
-          </div>
-        )}
         {hasMetricError && (
           <div className="mb-4 p-3 rounded-lg border border-red-500/20 bg-red-500/5">
             <p className="text-xs text-red-400 font-mono">
@@ -173,16 +172,7 @@ export default function Index() {
           />
 
           <div className="flex-1 space-y-6 min-w-0">
-            {universeLoading && !selectedTicker && (
-              <div className="flex items-center justify-center h-[400px] border border-dashed border-border rounded-lg">
-                <div className="text-center space-y-3">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground/40 mx-auto" />
-                  <p className="text-sm text-muted-foreground">Loading S&P 500 universe...</p>
-                </div>
-              </div>
-            )}
-
-            {!universeLoading && isFetching && company && (
+            {isFetching && company && (
               <div className="flex items-center justify-center h-[200px] border border-dashed border-border rounded-lg">
                 <div className="text-center space-y-2">
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground/40 mx-auto" />
@@ -227,7 +217,7 @@ export default function Index() {
                   </>
                 )}
               </>
-            ) : !isFetching && !universeLoading && !company && (
+            ) : !isFetching && !company && (
               <div className="flex items-center justify-center h-[400px] border border-dashed border-border rounded-lg">
                 <div className="text-center space-y-3">
                   <BarChart3 className="h-10 w-10 text-muted-foreground/30 mx-auto" />
@@ -242,13 +232,12 @@ export default function Index() {
         </div>
       </main>
 
-      {/* Footer */}
       <footer className="border-t border-border mt-12">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-4">
           <p className="text-xs text-muted-foreground/50 text-center font-mono">
             {isLive
-              ? 'Live data from Financial Modeling Prep & Alpha Vantage. Metrics cached for 1 hour.'
-              : 'Data is approximate / snapshot. Configure API keys for real-time metrics.'}
+              ? 'Live data from Yahoo Finance, FMP & Alpha Vantage. Hardcoded fallback values shown where API data is unavailable. Metrics cached for 1 hour.'
+              : 'Data is approximate / snapshot. Select a ticker to fetch live metrics.'}
           </p>
         </div>
       </footer>

@@ -57,11 +57,6 @@ export interface UniverseItem {
   marketCap: number | null;
 }
 
-export interface CacheEntry<T> {
-  data: T;
-  timestamp: number;
-}
-
 export const METRIC_LABELS: Record<keyof CompanyMetrics, string> = {
   evEbitda: 'EV/EBITDA',
   evSales: 'EV/Sales',
