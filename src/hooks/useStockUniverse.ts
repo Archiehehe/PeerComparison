@@ -68,7 +68,6 @@ export function useStockUniverse() {
         const fallback = hardcodedToUniverse();
         setUniverse(fallback);
         setIsLive(false);
-        saveCachedUniverse(fallback);
       }
     } finally {
       setLoading(false);

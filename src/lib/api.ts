@@ -4,6 +4,9 @@ const AV_BASE = 'https://www.alphavantage.co/query';
 const FMP_KEY = import.meta.env.VITE_FMP_KEY;
 const AV_KEY = import.meta.env.VITE_ALPHA_VANTAGE_KEY;
 
+if (!FMP_KEY) console.error('[PeerComparison] VITE_FMP_KEY is not set — API calls will fail');
+if (!AV_KEY) console.warn('[PeerComparison] VITE_ALPHA_VANTAGE_KEY is not set — fallback will be unavailable');
+
 interface FMPConstituent {
   symbol: string;
   name: string;
@@ -56,7 +59,8 @@ export async function fetchSP500Constituents(signal?: AbortSignal): Promise<{ ti
 }
 
 export async function fetchRatiosTTM(ticker: string, signal?: AbortSignal): Promise<FMPRatiosTTM> {
-  return fetchJson<FMPRatiosTTM>(`${FMP_BASE}/ratios-ttm/${ticker}?apikey=${FMP_KEY}`, signal);
+  const data = await fetchJson<FMPRatiosTTM[]>(`${FMP_BASE}/ratios-ttm/${ticker}?apikey=${FMP_KEY}`, signal);
+  return data[0] ?? {};
 }
 
 export async function fetchFinancialGrowth(ticker: string, signal?: AbortSignal): Promise<FMPFinancialGrowth> {

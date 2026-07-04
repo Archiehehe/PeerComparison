@@ -35,6 +35,7 @@ function buildSP500Company(
 export default function Index() {
   const { universe, loading: universeLoading, error: universeError, isLive, refresh: refreshUniverse } = useStockUniverse();
   const { fetchMetrics, loadingTickers, errors: metricErrors } = useCompanyMetrics();
+  const hasMetricError = Object.keys(metricErrors).length > 0;
 
   const [selectedTicker, setSelectedTicker] = useState('');
   const [matchingMode, setMatchingMode] = useState<MatchingMode>('industry-fallback');
@@ -146,6 +147,14 @@ export default function Index() {
           <div className="mb-4 p-3 rounded-lg border border-amber-500/20 bg-amber-500/5">
             <p className="text-xs text-amber-400 font-mono">
               Universe fetch failed: {universeError}. Using hardcoded snapshot data.
+            </p>
+          </div>
+        )}
+        {hasMetricError && (
+          <div className="mb-4 p-3 rounded-lg border border-red-500/20 bg-red-500/5">
+            <p className="text-xs text-red-400 font-mono">
+              Metrics failed for: {Object.entries(metricErrors).slice(0, 5).map(([t, e]) => `${t} (${e})`).join(', ')}
+              {Object.keys(metricErrors).length > 5 && ` +${Object.keys(metricErrors).length - 5} more`}
             </p>
           </div>
         )}

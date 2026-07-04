@@ -90,5 +90,5 @@ export function useCompanyMetrics() {
     return fetched;
   }, [getCachedMetrics]);
 
-  return { fetchMetrics, loadingTickers, errors, getCachedMetrics };
+  return { fetchMetrics, loadingTickers, errors: errors as Record<string, string>, getCachedMetrics };
 }
