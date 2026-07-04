@@ -49,6 +49,19 @@ export interface ComparisonResult {
   peerCount: number;
 }
 
+export interface UniverseItem {
+  ticker: string;
+  name: string;
+  sector: string;
+  industry: string;
+  marketCap: number | null;
+}
+
+export interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+}
+
 export const METRIC_LABELS: Record<keyof CompanyMetrics, string> = {
   evEbitda: 'EV/EBITDA',
   evSales: 'EV/Sales',

@@ -9,11 +9,11 @@ import { Slider } from '@/components/ui/slider';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Search, RotateCcw, ChevronsUpDown, Clock, X } from 'lucide-react';
-import { sp500Data } from '@/data/sp500';
-import { MatchingMode } from '@/types/financial';
+import { UniverseItem, MatchingMode } from '@/types/financial';
 import { formatMarketCap, logToMcap } from '@/lib/calculations';
 
 interface FilterPanelProps {
+  universe: UniverseItem[];
   selectedTicker: string;
   onSelectTicker: (ticker: string) => void;
   matchingMode: MatchingMode;
@@ -25,6 +25,7 @@ interface FilterPanelProps {
 }
 
 export function FilterPanel({
+  universe,
   selectedTicker,
   onSelectTicker,
   matchingMode,
@@ -37,8 +38,8 @@ export function FilterPanel({
   const [open, setOpen] = useState(false);
 
   const selectedCompany = useMemo(
-    () => sp500Data.find(c => c.ticker === selectedTicker),
-    [selectedTicker]
+    () => universe.find(c => c.ticker === selectedTicker),
+    [universe, selectedTicker]
   );
 
   const resetMcap = () => onMcapRangeChange([1, 4]);
@@ -81,7 +82,7 @@ export function FilterPanel({
                     No company found in S&P 500 universe.
                   </CommandEmpty>
                   <CommandGroup>
-                    {sp500Data.map(c => (
+                    {universe.map(c => (
                       <CommandItem
                         key={c.ticker}
                         value={`${c.ticker} ${c.name}`}
